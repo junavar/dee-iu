@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	Version    = "0.0.29"
+	Version    = "0.0.30"
 	SHM_DEYE   = 0x1238
 	SHM_METER  = 0x1264
 	SHM_ETEK   = 0x1230
@@ -26,24 +26,27 @@ const (
 	SIZE_CMD   = 64
 )
 
-// ShmPayload sincronizada con deye-ctl v0.0.9
+// Estructura de datos para SHM (v0.0.11
 type ShmPayload struct {
 	Timestamp   int64
-	GenInv      float64
-	Grid        float64
-	BattPower   float64
-	SOC         float64
-	GridCTInt   float64 // Registro 169
-	LoadTotal   float64
-	TempDisipDC float64
-	TempBatt    float64
-	PV1Power    float64
-	PV2Power    float64
-	PV3Power    float64
-	PV4Power    float64
-	TempDisipAC float64
-	InvOutPower float64 // Registro 175
-	Padding     [388]byte
+	PV1Power      float32 // Registro 186
+	PV2Power      float32 // Registro 187
+	PV3Power      float32 // Registro 188
+	PV4Power      float32 // Registro 189
+	PVTotalPower  float32 // Calculada: suma PV1..PV4
+	BattPower     float32 // Registro 190
+	InverterPower float32 // Registro 175
+	GenInv        float32 // Registro 166
+	GridCTInt     float32 // Registro 169
+	GridCTExt     float32 // Registro 172
+	LoadTotal     float32 // Calculada: P175+P166+P172
+	LoadUPS       float32 // Calculada: P175+P166+P169
+	LoadNUPS      float32 // Calculada: P172-P169
+	TempDisipDC   float32 // Registro 90
+	TempDisipAC   float32 // Registro 91
+	TempBatt      float32 // Registro 182
+	SOC           float32 // Registro 184
+	Padding       [432]byte // Ajustado para 512 bytes totales (512 - 8 - 17*4 - 4)
 	CRC         uint32
 }
 
@@ -251,9 +254,9 @@ func handleUI(w http.ResponseWriter, r *http.Request) {
 	totalSolar := d.PV1Power + d.PV2Power + d.PV3Power + d.PV4Power
 	res = strings.ReplaceAll(res, "{D_PV}", fmt.Sprintf("%.0f", totalSolar))
 	res = strings.ReplaceAll(res, "{D_GEN}", fmt.Sprintf("%.0f", d.GenInv))
-	res = strings.ReplaceAll(res, "{D_GRID}", fmt.Sprintf("%.0f", d.Grid))      // Grid R172
+	res = strings.ReplaceAll(res, "{D_GRID}", fmt.Sprintf("%.0f", d.GridCTInt))      // Grid R172
 	res = strings.ReplaceAll(res, "{D_GCT}", fmt.Sprintf("%.0f", d.GridCTInt))  // Grid CT R169
-	res = strings.ReplaceAll(res, "{D_IOUT}", fmt.Sprintf("%.0f", d.InvOutPower)) // Inverter Out R175
+	res = strings.ReplaceAll(res, "{D_IOUT}", fmt.Sprintf("%.0f", d.InverterPower)) // Inverter Out R175
 	res = strings.ReplaceAll(res, "{D_LOAD}", fmt.Sprintf("%.0f", d.LoadTotal))
 
 	// Batería (Color según carga/descarga)
