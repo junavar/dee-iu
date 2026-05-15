@@ -1,0 +1,8 @@
+# Binarios
+dee-iu-arm6
+
+# Certificados SSL (¡No subir a GitHub!)
+cert.pem
+key.pem
+
+*.log
